@@ -1,0 +1,19 @@
+# === IDE 配置文件 ===
+.idea/             # JetBrains IDE
+.vscode/           # VS Code 配置
+
+# === 语言相关 ===
+## Python
+__pycache__/
+.env/
+venv/
+
+# === 用户自定义目录 ===
+cache/
+conf_bak/
+llm_test/
+
+# === 日志文件 ===
+*.log*
+log/
+
