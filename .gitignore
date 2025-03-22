@@ -1,6 +1,6 @@
 # === IDE 配置文件 ===
-.idea/             # JetBrains IDE
-.vscode/           # VS Code 配置
+.idea/
+.vscode/
 
 # === 语言相关 ===
 ## Python
@@ -12,6 +12,7 @@ venv/
 cache/
 conf_bak/
 llm_test/
+output/
 
 # === 日志文件 ===
 *.log*

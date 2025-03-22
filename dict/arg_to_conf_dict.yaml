@@ -1,0 +1,8 @@
+correct_header_type: doc_convertor.correct_header_type
+force_ocr: doc_convertor.force_ocr
+table_enable: doc_convertor.table_enable
+formula_enable: doc_convertor.formula_enable
+remove_formula_from_code: doc_convertor.remove_formula_from_code
+replace_anno_in_texts: doc_convertor.replace_anno_in_texts
+single_mode: doc_convertor.single_mode
+override_history: doc_convertor.override_history

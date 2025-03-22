@@ -1,0 +1,89 @@
+doc_convertor: # 文档转换器配置，主要是pdf转成markdown的相关配置
+  # MinerU将pdf转成markdown时，都是一级标题，并且可能有多余的标题，所以需要进行修正
+  correct_header_type: bookmark # no/bookmark/by_llm/by_llm_easy no:不修正，bookmark:通过pdf书签修正，by_llm:通过大模型修正，by_llm_easy:通过大模型修正，但只保留1、2级标题，有书签则选bookmark，否则建议选by_llm_easy
+  force_ocr: false # true则解析pdf中的文档内容时强制使用ocr进行文字识别，文字版的pdf多数不需要开启（除非格式特殊，解析不出文字，则可以开启）。
+  table_enable: false # 透传MinerU的参数，false则直接将表格截图，否则会解析表格中的内容。开启会降低转换速度，并且有可能导致结果pdf渲染失败，或者表格超出页面范围。如非必要，不建议开启。
+  formula_enable: false # 透传MinerU的参数，true则进行公式识别并转换成Latex格式。开启会降低转换速度，并且有可能把非公式字符解析成特殊格式。除非确定pdf中有公式，否则不要开启。
+  remove_error_formula: true # 魔改MinerU的功能，暂时只排除代码块中的公式。因为代码中不可能有Latex公式，并且代码段中的字符经常被公式格式。只有在formula_enable开启时才有效。
+  replace_anno_in_texts: true # 魔改MinerU的功能，文本块的python代码的#号注释，在markdown里会被当成标题，所以转成c++的注释符号，暂时规避
+  single_mode: false # MinerU解析pdf时，显存大于8G默认走batch-mode，但是页数多的时候有可能会占用更多内存，开启此项后强制不走batch-mode，
+  override_history: false # 解析pdf的流程为pdf->markdown->修正标题的markdown，后面为翻译流程。如果上次任务执行失败，可以再次执行。已经完成的解析pdf步骤不会再重新执行。开启此项之后会删除输出目录下的所有文件，重新执行整个任务。
+  font: STSONG # STSONG/STKAITI，生成pdf时用的中文字体，linux下如果你并没有安装中文字体，则只支持STSONG或STKAITI，否则只要是fc-list: lang=zh查出来的字体都可以用
+  sure_has_font: false # 仅对linux有效，true表示确认上面的中文font是已经安装了的，则你可以填写任意已安装的中文名称(fc-list: lang=zh结果的第2列)
+batch_analyze: # remove_formula_from_code的具体配置
+  llm_agent_name: free_llm_agent # 判断文本块是否包含代码，通过问大模型实现，此处不需要特别强的大模型，故可以用14b的R1模型。
+  max_workers: 8 # 调大模型的线程数
+  timeout_per_job: 60 # 每一次调用的超时时间
+bookmark_header_corrector: # 利用pdf书签决定MinerU解析出的markdown的标题和级别
+  match_type: auto # auto/distance/edit_dist，distance:书签映射精确位置，edit_dist:书签只映射页码，会采用字符串距离匹配书签和标题，auto: 自动判断
+  dist_type: dist_y # auto/dist_y/dist_xy，仅在书签映射精确位置时起作用，dist_y: 只有y坐标有效，dist_xy: x、y坐标都有效。除非是两列的pdf，否则建议直接用dist_y
+  dist_thresh_max: 100 # 书签匹配MinerU解析出的文本块（或标题块）时，距离不能超过100像素
+  edit_thresh_max: 10 # 书签匹配文本块（或标题块）字符串内容时，最小编辑距离不能超过10
+  edit_thresh_max_rate: 0.3 # 最小编辑距离不能超过书签字符串长度的0.3，跟上一项两者得同时满足
+  title_starts: ['part', 'chapter', 'appendix'] # 书签惯用的开头，加进来有助于成功匹配。
+  ignore_starts: true # 某些pdf的书签标题中以chapter开头，但实际pdf文本中并没有chapter字样，则打开此开关，对应的开头就是title_starts里面配置的
+header_corrector: # 利用大模型对MinerU返回的所有标题进行修正，删除多余标题，修正标题层级，仅在correct_header_type为by_llm/by_llm_easy时启用
+  allow_distance: 3 # 大模型返回的修正层级的标题，与原标题进行匹配时的最大编辑距离
+  allow_diff_chars: ['$', ' ', ' '] # 这里面的字符不计入编辑距离
+  title_chunk_size: 1024 # 所有标题可能过长，故需分段送给大模型修正，此处即为分段token长度。by_llm_easy不涉及此配置
+  allow_miss_num: 8 # 大模型反回的修正层级的标题有可能会有缺失，此配置即为允许缺失的标题数。by_llm_easy不涉及此配置
+  allow_miss_depth: 4 # 大于等于4级的标题，不限制缺失数。by_llm_easy不涉及此配置
+  llm_agent_name: ds_llm_agent # 对应的大模型配置项的key，比如下面的ds_llm_agent，qwq_llm_agent等，自己建一段配置也可以，此功能需要强力的大模型，比如deepseek R1/V3，qwen-max
+llm_translator: # markdown翻译配置
+  need_format_code: true # 大模型翻译提示词中会让大模型把代码段加上```的代码段标记，此处的配置为true，则会在代码段中将超长的代码行自动换行，否则在pdf中可能显示不全。
+  need_correct_imagepath: true # markdown段落中会有图片链接，部分模型（比如qwen的qwq）翻译后有可能把图片链接改错了。此配置为true会匹配原文的图片链接进行修正。
+  timeout: 120 # 每一段翻译的超时时间
+  max_workers: 4 # 调大模型的线程数，部分模型可能没有说明流控，但调频繁了还是会超时，则可以降低线程数，或者尝试设置流控。
+  llm_agent_name: # 对应的大模型配置项的键，比如下面的ds_llm_agent，qwq_llm_agent等，模型越强大，翻译效果越好。
+    - ds_llm_agent # 可以配置多个大模型（比如不同帐号的deepseek），但不建议配置多个不同类型、来源的大模型，除非你不需要cache
+  title_add_size: 200 # 尝试在分段时将标题和下面的内容合在一起，此处即为标题预设的token数。
+  chunk_size: 2048 # 分段调大模型翻译，此处即为每段的token数，不要超过对应大模型的输入或输出长度。
+code_format: # 将大模型返回的翻译结果中的代码段超长的行自动换行
+  languages: # 支持的语言，其实就是通过```cpp，```python来判断
+    - cpp
+    - python
+  format_all_code: true # 为true则不论什么语言，都自动换行
+  remove_code_in_line: true # 为true则如果行内代码超过code_in_line_length设置的长度，则移除行内代码的格式。行内代码比如：这是一个行内代码`a=1`行内代码结束
+  code_in_line_length: 60 # 行内代码的长度上限
+  line_length: 80 # 代码段每一行的长度上限
+  split_before_chars: ['.', '-', '+', '/', '*'] # 在这些字符之前换行
+  split_after_chars: [' ', ',', '(', ')', ';', ':'] # 在这些字符之后换行
+  force_split: true # 如果长度已经超过line_length了，但还没遇到可换行的字符，此配置为true则立刻换行
+  indentation: 4 # 换行后与原始行保持的缩进距离
+free_rate_control: # 流控配置，采用滑动窗口进行统计
+  rpm: 1000 # 每分钟访问次数上限，其实不一定是每分钟，具体看window_gap的配置
+  tpm: 40000 # 每分钟发送token数上限
+  wait_seconds: 20 # 超流控之后等待20秒后再试
+  max_retry: 20 # 重试20次如果还超流控，则该条消息失败
+  window_gap: 60 # 流控滑动窗口的长度，单位秒。配置为60，就是每分钟的流控。
+  token_encoding: cl100k_base # token编码方式，openai gpt系列用的就是这个
+ds_llm_agent: # deepseek官方api，这里的'ds_llm_agent'是在别的配置中引用的名字，随便起什么都可以。更多的llm_agent示例见conf_llm_example.yaml
+  base_url: https://api.deepseek.com/
+  model_name: deepseek-chat
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx # api_key需要到对应平台创建
+  timeout: 120
+  max_retries: 2 # 开启流控的话则把这一项置0，否则会影响流控的计算
+  use_cache: true # 开启缓存，会把大模型的响应缓存在文件中，下次同样的问题直接从缓存文件中读取，不会重复调用大模型
+  cache_file_name: deepseek-chat # 缓存文件名。缓存目录就是项目目录的cache文件夹
+  rate_control: # 没有明确说明流控的，可以不配置。也可以通过相关任务的线程数来控制访问频繁。
+  streaming: false # 流式输出，没有强制要求流式输出的，可以指定为false
+qwq_llm_agent: # 也是qwen的模型，总体效果强于qwen-plus，速度还快，但是部分场景似乎不是太稳定，比如imageid在翻译时有可能会改变。
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1/
+  model_name: qwq-plus
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 240
+  max_retries: 2
+  use_cache: True
+  cache_file_name: qwq-plus
+  rate_control:
+  streaming: true # 暂只支持流式响应，所以此处得是true
+free_llm_agent: # 硅基流动平台，支持多种模型，这里的14B其实不免费，7B及以下是免费的
+  base_url: https://api.siliconflow.cn/
+  model_name: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 60
+  max_retries: 0 # 开启流控的话则把这一项置0，否则会影响流控的计算
+  use_cache: true
+  cache_file_name: DeepSeek-R1-Distill-Qwen-14B
+  rate_control: free_rate_control # 在硅基流动平台模型详情中能看到明确的流控限制，所以要配置。
+  streaming: false

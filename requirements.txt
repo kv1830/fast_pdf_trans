@@ -1,0 +1,8 @@
+langchain==0.3.14
+langchain_openai==0.3.0
+tiktoken==0.8.0
+PyYAML
+pypandoc_binary
+magic-pdf[full]==1.2.0
+modelscope
+huggingface_hub

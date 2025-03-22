@@ -1,0 +1,6 @@
+pillow
+PyMuPDF
+opencv-python
+numpy
+modelscope
+huggingface_hub

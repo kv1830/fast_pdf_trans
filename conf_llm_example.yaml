@@ -1,0 +1,67 @@
+free_rate_control: # 流控配置，采用滑动窗口进行统计
+  rpm: 1000 # 每分钟访问次数上限，其实不一定是每分钟，具体看window_gap的配置
+  tpm: 40000 # 每分钟发送token数上限
+  wait_seconds: 20 # 超流控之后等待20秒后再试
+  max_retry: 20 # 重试20次如果还超流控，则该条消息失败
+  window_gap: 60 # 流控滑动窗口的长度，单位秒。配置为60，就是每分钟的流控。
+  token_encoding: cl100k_base # token编码方式，openai gpt系列用的就是这个
+ds_llm_agent: # deepseek官方api，这里的'ds_llm_agent'是在别的配置中引用的名字，随便起什么都可以。
+  base_url: https://api.deepseek.com/
+  model_name: deepseek-chat
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 120
+  max_retries: 2 # 开启流控的话则把这一项置0，否则会影响流控的计算
+  use_cache: True # 开启缓存，会把大模型的响应缓存在文件中，下次同样的问题直接从缓存文件中读取，不会重复调用大模型
+  cache_file_name: deepseek-chat # 缓存文件名。缓存目录就是项目目录的cache文件夹
+  rate_control: # 没有明确说明流控的，可以不配置。也可以通过相关任务的线程数来控制访问频繁。
+  streaming: false # 流式输出，没有强制要求流式输出的，可以指定为false
+qwenplus_llm_agent: #通义千问官方api
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1/
+  model_name: qwen-plus # qwen-plus/qwen-max等，qwen-max效果最好，但是慢，并且调用太频繁会超时
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 240
+  max_retries: 2
+  use_cache: True
+  cache_file_name: qwen-plus
+  rate_control:
+  streaming: false
+qwq_llm_agent: # 也是qwen的模型，总体效果强于qwen-plus，速度还快，但是部分场景似乎不是太稳定，比如imageid在翻译时有可能会改变。
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1/
+  model_name: qwq-plus
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 240
+  max_retries: 2
+  use_cache: True
+  cache_file_name: qwq-plus
+  rate_control:
+  streaming: true # 暂只支持流式响应，所以此处得是true
+free_llm_agent: # 硅基流动平台，支持多种模型，这里的14B其实不免费，7B及以下是免费的
+  base_url: https://api.siliconflow.cn/
+  model_name: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
+  api_key: sk-xxxxxxxxxxxxxxxxxxxxx
+  timeout: 60
+  max_retries: 0 # 开启流控的话则把这一项置0，否则会影响流控的计算
+  use_cache: true
+  cache_file_name: DeepSeek-R1-Distill-Qwen-14B
+  rate_control: free_rate_control # 在硅基流动平台模型详情中能看到明确的流控限制，所以要配置。
+  streaming: false
+local_ollama_llm_agent: # ollama本地api示例
+  base_url: http://127.0.0.1:11434/v1/
+  model_name: my_deepseek_r1_14B_q8
+  api_key: none # 本地模型不涉及api_key
+  timeout: 1200
+  max_retries: 2
+  use_cache: false
+  cache_file_name: DeepSeek-R1-Distill-Qwen-1.5B-local
+  rate_control: sf_rate_contorl
+  streaming: False
+doubao_llm_agent: # 豆包官方api（火山方舟）
+  base_url: https://ark.cn-beijing.volces.com/api/v3/
+  model_name: doubao-pro-32k-241215
+  api_key: xxxxxxxxxxxxxxxxxxxxx
+  timeout: 240
+  max_retries: 2
+  use_cache: True
+  cache_file_name: doubao-pro
+  rate_control:
+  streaming: false
